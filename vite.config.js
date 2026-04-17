@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import mkcert from 'vite-plugin-mkcert';
 
 export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/tools/' : '/',
   plugins: [mkcert({ savePath: '.vite-plugin-mkcert' })],
   server: {
     host: true,
