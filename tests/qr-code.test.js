@@ -1,7 +1,19 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+const { toCanvasMock } = vi.hoisted(() => ({
+  toCanvasMock: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('qrcode', () => ({
+  default: {
+    toCanvas: toCanvasMock,
+  },
+}));
+
 import {
   buildQrOptions,
   isLowContrastPair,
+  renderQrToCanvas,
   shouldWarnAboutScanability,
 } from '../src/lib/qr-code.js';
 import { normalizeStylePatch } from '../src/lib/defaults.js';
@@ -36,6 +48,35 @@ describe('buildQrOptions', () => {
         background: '#ffffff',
       }),
     ).toBe(true);
+  });
+
+  it('passes text and options separately to qrcode canvas rendering', async () => {
+    const canvas = {
+      getContext: vi.fn(),
+    };
+
+    await renderQrToCanvas(canvas, {
+      value: 'hello world',
+      size: 320,
+      margin: 16,
+      foreground: '#000000',
+      background: '#ffffff',
+      errorCorrectionLevel: 'M',
+    });
+
+    expect(toCanvasMock).toHaveBeenCalledWith(
+      canvas,
+      'hello world',
+      expect.objectContaining({
+        width: 320,
+        margin: 16,
+        errorCorrectionLevel: 'M',
+        color: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
+      }),
+    );
   });
 });
 

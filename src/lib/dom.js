@@ -4,8 +4,6 @@ export function createShellMarkup() {
       <section class="hero-panel" data-section="input">
         <div class="hero-copy">
           <p class="eyebrow">Offline QR Tool</p>
-          <h1>Create a QR code in one move.</h1>
-          <p class="intro">Paste, share, or type any string. The code updates instantly and stays available offline.</p>
         </div>
         <label class="input-panel">
           <span class="label">Content</span>

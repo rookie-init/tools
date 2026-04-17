@@ -68,7 +68,8 @@ export function shouldWarnAboutScanability({ foreground, background }) {
 }
 
 export async function renderQrToCanvas(canvas, options) {
-  await QRCode.toCanvas(canvas, buildQrOptions(options));
+  const { text, ...qrOptions } = buildQrOptions(options);
+  await QRCode.toCanvas(canvas, text, qrOptions);
 }
 
 export function exportCanvasAsPng(canvas, filename = 'qr-code.png') {
