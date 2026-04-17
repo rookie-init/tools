@@ -5,31 +5,37 @@ import { describe, expect, it } from 'vitest';
 const projectRoot = path.resolve(import.meta.dirname, '..');
 
 describe('offline pwa configuration', () => {
-  it('registers the service worker without waiting for the full window load event', () => {
+  it('registers the service worker through vite-plugin-pwa with immediate activation', () => {
     const main = fs.readFileSync(path.join(projectRoot, 'src', 'main.js'), 'utf8');
 
-    expect(main).toContain("navigator.serviceWorker.register('/sw.js')");
-    expect(main).not.toContain("window.addEventListener('load'");
+    expect(main).toContain("import { registerSW } from 'virtual:pwa-register';");
+    expect(main).toContain('registerSW({ immediate: true');
   });
 
-  it('makes the service worker activate and claim pages immediately', () => {
-    const sw = fs.readFileSync(path.join(projectRoot, 'public', 'sw.js'), 'utf8');
+  it('configures vite-plugin-pwa to generate the service worker and manifest from build output', () => {
+    const viteConfig = fs.readFileSync(path.join(projectRoot, 'vite.config.js'), 'utf8');
 
-    expect(sw).toContain('self.skipWaiting()');
-    expect(sw).toContain('self.clients.claim()');
+    expect(viteConfig).toContain("import { VitePWA } from 'vite-plugin-pwa';");
+    expect(viteConfig).toContain('VitePWA({');
+    expect(viteConfig).toContain("strategies: 'generateSW'");
+    expect(viteConfig).toContain("registerType: 'autoUpdate'");
+    expect(viteConfig).toContain('manifest: {');
   });
 
-  it('uses resilient shell precaching instead of failing the whole install on one missing asset', () => {
-    const sw = fs.readFileSync(path.join(projectRoot, 'public', 'sw.js'), 'utf8');
+  it('aligns pwa start and share target urls with the github pages base path', () => {
+    const viteConfig = fs.readFileSync(path.join(projectRoot, 'vite.config.js'), 'utf8');
 
-    expect(sw).not.toContain('cache.addAll(APP_SHELL)');
-    expect(sw).toContain('Promise.allSettled');
+    expect(viteConfig).toContain('const base = mode ===');
+    expect(viteConfig).toContain('start_url: base');
+    expect(viteConfig).toContain('scope: base');
+    expect(viteConfig).toContain('action: base');
   });
 
-  it('falls back to cached shell for navigation requests when offline', () => {
-    const sw = fs.readFileSync(path.join(projectRoot, 'public', 'sw.js'), 'utf8');
+  it('removes the hand-written service worker and static manifest files', () => {
+    const serviceWorkerPath = path.join(projectRoot, 'public', 'sw.js');
+    const manifestPath = path.join(projectRoot, 'public', 'manifest.webmanifest');
 
-    expect(sw).toContain("event.request.mode === 'navigate'");
-    expect(sw).toContain("cache.match('/')");
+    expect(fs.existsSync(serviceWorkerPath)).toBe(false);
+    expect(fs.existsSync(manifestPath)).toBe(false);
   });
 });

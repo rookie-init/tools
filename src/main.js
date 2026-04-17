@@ -1,4 +1,5 @@
 import './styles.css';
+import { registerSW } from 'virtual:pwa-register';
 import { shouldAutoImportClipboard } from './lib/auto-clipboard.js';
 import { DEFAULT_STATE, normalizeStylePatch } from './lib/defaults.js';
 import {
@@ -43,6 +44,7 @@ import { resolveStartupValue } from './lib/startup-value.js';
 
 const app = document.querySelector('#app');
 app.innerHTML = createShellMarkup();
+registerSW({ immediate: true });
 
 const state = {
   ...DEFAULT_STATE,
@@ -310,10 +312,6 @@ if (sharedValue) {
       await applyValue(startupValue);
     }
   }
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
 }
 
 await syncQr();

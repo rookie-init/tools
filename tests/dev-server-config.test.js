@@ -17,7 +17,7 @@ describe('dev server configuration', () => {
 
     expect(viteConfig).toContain("import mkcert from 'vite-plugin-mkcert';");
     expect(viteConfig).toContain("savePath: '.vite-plugin-mkcert'");
-    expect(viteConfig).toContain("plugins: [mkcert({ savePath: '.vite-plugin-mkcert' })],");
+    expect(viteConfig).toContain("mkcert({ savePath: '.vite-plugin-mkcert' })");
     expect(viteConfig).toContain('preview: {');
     expect(viteConfig).toContain("https: mode === 'https',");
   });

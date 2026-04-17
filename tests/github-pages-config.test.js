@@ -8,7 +8,8 @@ describe('GitHub Pages configuration', () => {
   it('uses /tools/ as the production base while keeping local development at root', () => {
     const viteConfig = fs.readFileSync(path.join(projectRoot, 'vite.config.js'), 'utf8');
 
-    expect(viteConfig).toContain("base: mode === 'production' ? '/tools/' : '/',");
+    expect(viteConfig).toContain("const base = mode === 'production' ? '/tools/' : '/';");
+    expect(viteConfig).toContain('base,');
   });
 
   it('defines a GitHub Pages deployment workflow for main', () => {
