@@ -38,68 +38,55 @@ select {
 .app-shell {
   min-height: 100vh;
   display: grid;
-  gap: 20px;
-  padding: 20px;
+  gap: 12px;
+  padding: 12px;
   background:
-    linear-gradient(180deg, #000000 0 44%, #f5f5f7 44% 100%);
+    linear-gradient(180deg, #000000 0 46%, #f5f5f7 46% 100%);
 }
 
-.hero-panel,
 .preview-panel,
+.controls-panel,
 .settings-panel,
 .memory-panel {
   border-radius: var(--radius-lg);
 }
 
-.hero-panel,
 .preview-panel {
   background: #000000;
   color: #ffffff;
 }
 
+.controls-panel,
 .settings-panel,
 .memory-panel {
   background: #f5f5f7;
   color: #1d1d1f;
 }
 
-.hero-panel {
-  display: grid;
-  gap: 20px;
-  padding: 28px 22px;
-}
-
 .preview-panel {
   display: grid;
-  gap: 16px;
-  padding: 22px;
+  gap: 10px;
+  padding: 14px;
+}
+
+.controls-panel {
+  display: grid;
+  gap: 10px;
+  padding: 0;
 }
 
 .settings-panel,
 .memory-panel {
   display: grid;
-  gap: 18px;
-  padding: 22px;
+  gap: 14px;
+  padding: 16px;
 }
 
-.hero-copy {
-  display: grid;
-  gap: 10px;
-}
-
-.hero-copy h1,
 .panel-header h2 {
   margin: 0;
   font-family: "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
   line-height: 1.08;
   letter-spacing: -0.02em;
-}
-
-.hero-copy h1 {
-  font-size: clamp(2.25rem, 8vw, 3.5rem);
-}
-
-.panel-header h2 {
   font-size: clamp(1.5rem, 5vw, 2.2rem);
 }
 
@@ -121,8 +108,6 @@ select {
   color: var(--color-accent);
 }
 
-.intro,
-.label,
 .label-light,
 .micro-copy,
 .empty-copy {
@@ -137,7 +122,6 @@ select {
   color: var(--color-text-muted);
 }
 
-.label,
 .label-light {
   color: inherit;
   font-weight: 600;
@@ -149,25 +133,36 @@ select {
   gap: 10px;
 }
 
+.input-panel-tight {
+  gap: 0;
+}
+
 #qr-input {
   width: 100%;
-  min-height: 144px;
+  min-height: 112px;
   resize: vertical;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 14px;
+  background: #ffffff;
+  color: #1d1d1f;
+  box-shadow: var(--shadow-soft);
+}
+
+#qr-input:focus {
+  outline: 2px solid rgba(0, 113, 227, 0.35);
+  outline-offset: 2px;
+  color: #1d1d1f;
 }
 
 #qr-input::placeholder {
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(0, 0, 0, 0.42);
 }
 
 .action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
 .action-row-stacked {
@@ -188,8 +183,8 @@ select {
 }
 
 .button-secondary {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: #e6e6eb;
+  color: #1d1d1f;
 }
 
 .button-tertiary {
@@ -204,21 +199,28 @@ select {
 .qr-card {
   display: grid;
   place-items: center;
-  min-height: 360px;
-  border-radius: 32px;
+  min-height: min(72vw, 420px);
+  border-radius: 28px;
   background: #ffffff;
-  padding: 20px;
+  padding: 10px;
   box-shadow: var(--shadow-soft);
+}
+
+.qr-card-dominant {
+  min-height: min(72vw, 420px);
 }
 
 #qr-canvas {
   display: block;
+  width: 100%;
   max-width: 100%;
+  aspect-ratio: 1 / 1;
   height: auto;
 }
 
 .warning {
   color: var(--color-accent-bright);
+  min-height: 20px;
 }
 
 .panel-header {
@@ -226,9 +228,35 @@ select {
   gap: 8px;
 }
 
+.style-disclosure {
+  display: grid;
+  gap: 12px;
+}
+
+.style-toggle {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 18px;
+  padding: 0 16px;
+  background: #ffffff;
+  color: #1d1d1f;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
+
+.style-toggle-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
 .control-grid {
   display: grid;
-  gap: 16px;
+  gap: 14px;
+  padding: 6px 0 0;
 }
 
 .control input[type="range"],
@@ -250,7 +278,7 @@ select {
 .chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .memory-chip {
@@ -274,19 +302,35 @@ select {
 
 @media (min-width: 768px) {
   .app-shell {
-    max-width: 1080px;
+    max-width: 1180px;
     margin: 0 auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    gap: 16px;
     align-items: start;
   }
 
-  .hero-panel,
   .preview-panel {
-    min-height: 100%;
+    grid-column: 1;
+    position: sticky;
+    top: 12px;
   }
 
-  .settings-panel,
-  .memory-panel {
-    grid-column: span 2;
+  .controls-panel {
+    grid-column: 2;
+    align-content: start;
+  }
+
+  .qr-card,
+  .qr-card-dominant {
+    min-height: 520px;
+    padding: 14px;
+  }
+
+  .controls-actions {
+    justify-content: flex-start;
+  }
+
+  .controls-actions .button {
+    min-width: 148px;
   }
 }
