@@ -8,6 +8,11 @@ export default defineConfig(({ mode }) => ({
     port: 4173,
     https: mode === 'https',
   },
+  preview: {
+    host: true,
+    port: 4173,
+    https: mode === 'https',
+  },
   build: {
     rollupOptions: {
       output: {

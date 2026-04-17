@@ -9,14 +9,16 @@ describe('dev server configuration', () => {
     const packageJson = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
 
     expect(packageJson.scripts['dev:https']).toBe('vite --mode https');
+    expect(packageJson.scripts['preview:https']).toBe('vite preview --mode https');
   });
 
-  it('enables mkcert-backed https in vite config', () => {
+  it('enables mkcert-backed https in vite config for dev and preview', () => {
     const viteConfig = fs.readFileSync(path.join(projectRoot, 'vite.config.js'), 'utf8');
 
     expect(viteConfig).toContain("import mkcert from 'vite-plugin-mkcert';");
     expect(viteConfig).toContain("savePath: '.vite-plugin-mkcert'");
     expect(viteConfig).toContain("plugins: [mkcert({ savePath: '.vite-plugin-mkcert' })],");
+    expect(viteConfig).toContain('preview: {');
     expect(viteConfig).toContain("https: mode === 'https',");
   });
 });

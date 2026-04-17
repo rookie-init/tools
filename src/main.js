@@ -313,9 +313,7 @@ if (sharedValue) {
 }
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js');
-  });
+  navigator.serviceWorker.register('/sw.js');
 }
 
 await syncQr();

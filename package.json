@@ -8,6 +8,7 @@
     "dev:https": "vite --mode https",
     "build": "vite build",
     "preview": "vite preview",
+    "preview:https": "vite preview --mode https",
     "test": "vitest run"
   },
   "dependencies": {
