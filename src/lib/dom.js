@@ -1,33 +1,27 @@
 export function createShellMarkup() {
   return `
     <main class="app-shell">
-      <section class="hero-panel" data-section="input">
-        <div class="hero-copy">
-          <p class="eyebrow">Offline QR Tool</p>
-        </div>
-        <label class="input-panel">
-          <span class="label">Content</span>
-          <textarea id="qr-input" rows="6" placeholder="Paste text, URL, or any string"></textarea>
-        </label>
-        <div class="action-row">
-          <button id="paste-button" class="button button-primary" type="button">Paste and Generate</button>
-          <button id="clear-button" class="button button-secondary" type="button">Clear</button>
-        </div>
-      </section>
-      <section class="preview-panel" data-section="preview">
-        <div class="qr-card">
+      <section class="preview-panel" data-section="preview" data-layout="preview">
+        <div class="qr-card qr-card-dominant">
           <canvas id="qr-canvas" width="320" height="320"></canvas>
         </div>
-        <p id="source-indicator" class="micro-copy">Ready offline</p>
         <p id="scanability-warning" class="micro-copy warning" hidden></p>
-        <div class="action-row action-row-stacked">
+        <div class="action-row action-row-stacked preview-actions">
           <button id="save-button" class="button button-primary button-wide" type="button">Save PNG</button>
           <button id="favorite-button" class="button button-tertiary button-wide" type="button">Toggle Favorite</button>
         </div>
-        <p class="micro-copy">If download is blocked on iPhone, long-press the QR card to save the image.</p>
       </section>
-      <section class="settings-panel" data-section="controls"></section>
-      <section class="memory-panel" data-section="memory"></section>
+      <section class="controls-panel" data-section="input" data-layout="controls">
+        <label class="input-panel input-panel-tight">
+          <textarea id="qr-input" rows="5" placeholder="Paste text, URL, or any string"></textarea>
+        </label>
+        <div class="action-row controls-actions">
+          <button id="paste-button" class="button button-primary" type="button">Paste and Generate</button>
+          <button id="clear-button" class="button button-secondary" type="button">Clear</button>
+        </div>
+        <section class="settings-panel" data-section="controls"></section>
+        <section class="memory-panel" data-section="memory"></section>
+      </section>
     </main>
   `;
 }
@@ -36,7 +30,6 @@ export function getAppElements() {
   return {
     input: document.querySelector('#qr-input'),
     canvas: document.querySelector('#qr-canvas'),
-    sourceIndicator: document.querySelector('#source-indicator'),
     warning: document.querySelector('#scanability-warning'),
     pasteButton: document.querySelector('#paste-button'),
     clearButton: document.querySelector('#clear-button'),
@@ -47,12 +40,8 @@ export function getAppElements() {
   };
 }
 
-export function renderSettings(state) {
+function renderStyleControls(state) {
   return `
-    <div class="panel-header">
-      <p class="eyebrow eyebrow-light">Style</p>
-      <h2>Adjust the code without leaving the page.</h2>
-    </div>
     <div class="control-grid">
       <label class="control">
         <span class="label-light">Size</span>
@@ -87,6 +76,20 @@ export function renderSettings(state) {
   `;
 }
 
+export function renderSettings(state) {
+  const expanded = Boolean(state.isStyleExpanded);
+
+  return `
+    <div class="style-disclosure" data-style-expanded="${expanded}">
+      <button id="style-toggle-button" class="style-toggle" type="button" aria-expanded="${expanded}">
+        <span class="eyebrow eyebrow-light">Style</span>
+        <span class="style-toggle-icon">${expanded ? '−' : '+'}</span>
+      </button>
+      ${expanded ? renderStyleControls(state) : ''}
+    </div>
+  `;
+}
+
 export function renderMemory(state) {
   const historyItems = state.history
     .map((item) => `<button class="memory-chip" data-history="${item}">${item}</button>`)
@@ -109,8 +112,4 @@ export function renderMemory(state) {
       <div class="chip-list">${historyItems || '<p class="empty-copy">No recent items yet.</p>'}</div>
     </div>
   `;
-}
-
-export function formatSourceLabel(source) {
-  return source || 'Ready offline';
 }

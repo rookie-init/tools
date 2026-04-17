@@ -3,7 +3,6 @@ import { DEFAULT_STATE, normalizeStylePatch } from './lib/defaults.js';
 import { readClipboardTextSafely } from './lib/clipboard.js';
 import {
   createShellMarkup,
-  formatSourceLabel,
   getAppElements,
   renderMemory,
   renderSettings,
@@ -24,7 +23,11 @@ import {
 const app = document.querySelector('#app');
 app.innerHTML = createShellMarkup();
 
-const state = { ...DEFAULT_STATE, ...loadStoredState() };
+const state = {
+  ...DEFAULT_STATE,
+  ...loadStoredState(),
+  isStyleExpanded: false,
+};
 const elements = getAppElements();
 let isEditing = false;
 
@@ -34,10 +37,8 @@ function renderMemorySection() {
 
 function renderSettingsSection() {
   elements.settings.innerHTML = renderSettings(state);
-}
-
-function updateSourceIndicator(source) {
-  elements.sourceIndicator.textContent = formatSourceLabel(source);
+  bindSettingControls();
+  bindStyleToggle();
 }
 
 async function syncQr() {
@@ -58,17 +59,18 @@ async function syncQr() {
     : '';
 }
 
-async function applyValue(nextValue, source = null) {
+async function applyValue(nextValue) {
   state.value = nextValue;
   Object.assign(state, pushHistoryItem(state, nextValue));
   elements.input.value = state.value;
-  updateSourceIndicator(source);
   renderMemorySection();
   saveStoredState(state);
   await syncQr();
 }
 
 function bindSettingControls() {
+  if (!state.isStyleExpanded) return;
+
   for (const [key, id] of [
     ['size', '#size-input'],
     ['margin', '#margin-input'],
@@ -89,18 +91,23 @@ function bindSettingControls() {
   });
 }
 
+function bindStyleToggle() {
+  document.querySelector('#style-toggle-button').addEventListener('click', () => {
+    state.isStyleExpanded = !state.isStyleExpanded;
+    renderSettingsSection();
+  });
+}
+
 async function tryClipboardImport(source) {
   if (!state.autoClipboard || isEditing) return;
   const nextValue = await readClipboardTextSafely();
   if (!nextValue || nextValue === state.value) return;
-  await applyValue(nextValue, source);
+  await applyValue(nextValue);
 }
 
 elements.input.value = state.value;
 renderSettingsSection();
 renderMemorySection();
-bindSettingControls();
-updateSourceIndicator(null);
 
 elements.input.addEventListener('focus', () => {
   isEditing = true;
@@ -117,7 +124,6 @@ elements.input.addEventListener('blur', () => {
 elements.input.addEventListener('input', async (event) => {
   state.value = event.target.value;
   saveStoredState(state);
-  updateSourceIndicator('Edited manually');
   await syncQr();
 });
 
@@ -125,14 +131,13 @@ elements.clearButton.addEventListener('click', async () => {
   state.value = '';
   elements.input.value = '';
   saveStoredState(state);
-  updateSourceIndicator('Cleared');
   await syncQr();
 });
 
 elements.pasteButton.addEventListener('click', async () => {
   const nextValue = await readClipboardTextSafely();
   if (nextValue) {
-    await applyValue(nextValue, 'Pasted from clipboard');
+    await applyValue(nextValue);
   }
 });
 
@@ -147,11 +152,11 @@ elements.memory.addEventListener('click', async (event) => {
   const favoriteButton = event.target.closest('[data-favorite]');
 
   if (historyButton) {
-    await applyValue(historyButton.dataset.history, 'Loaded from recent history');
+    await applyValue(historyButton.dataset.history);
   }
 
   if (favoriteButton) {
-    await applyValue(favoriteButton.dataset.favorite, 'Loaded from favorites');
+    await applyValue(favoriteButton.dataset.favorite);
   }
 });
 
@@ -167,7 +172,7 @@ document.addEventListener('visibilitychange', async () => {
 
 const sharedValue = readSharedValueFromUrl();
 if (sharedValue) {
-  await applyValue(sharedValue, 'Imported from Android share sheet');
+  await applyValue(sharedValue);
   clearSharedParams();
 } else {
   await tryClipboardImport('Loaded from clipboard');
