@@ -1,6 +1,24 @@
 import './styles.css';
+import { shouldAutoImportClipboard } from './lib/auto-clipboard.js';
 import { DEFAULT_STATE, normalizeStylePatch } from './lib/defaults.js';
-import { readClipboardTextSafely } from './lib/clipboard.js';
+import {
+  copyTextSafely,
+  getPasteButtonLabel,
+  readClipboardTextResult,
+} from './lib/clipboard.js';
+import {
+  createClipboardSession,
+  markAppClipboardWrite,
+  notePossibleExternalClipboardChange,
+  shouldTreatClipboardReadAsStale,
+} from './lib/clipboard-session.js';
+import { scheduleForegroundClipboardImport } from './lib/foreground-clipboard.js';
+import {
+  collectDebugInfo,
+  formatDebugInfo,
+  writeDebugInfoToInput,
+} from './lib/debug-info.js';
+import { getCopyPayload } from './lib/copy-action.js';
 import {
   createShellMarkup,
   getAppElements,
@@ -14,11 +32,14 @@ import {
 } from './lib/qr-code.js';
 import { clearSharedParams, readSharedValueFromUrl } from './lib/share-target.js';
 import {
+  addFavoriteItem,
   loadStoredState,
+  removeFavoriteItem,
+  removeHistoryItem,
   pushHistoryItem,
   saveStoredState,
-  toggleFavorite,
 } from './lib/storage.js';
+import { resolveStartupValue } from './lib/startup-value.js';
 
 const app = document.querySelector('#app');
 app.innerHTML = createShellMarkup();
@@ -26,10 +47,14 @@ app.innerHTML = createShellMarkup();
 const state = {
   ...DEFAULT_STATE,
   ...loadStoredState(),
+  value: '',
   isStyleExpanded: false,
 };
 const elements = getAppElements();
 let isEditing = false;
+let pasteButtonResetTimer = null;
+const clipboardSession = createClipboardSession();
+let cancelForegroundClipboardImport = null;
 
 function renderMemorySection() {
   elements.memory.innerHTML = renderMemory(state);
@@ -68,6 +93,10 @@ async function applyValue(nextValue) {
   await syncQr();
 }
 
+function buildDebugInfoText() {
+  return formatDebugInfo(collectDebugInfo());
+}
+
 function bindSettingControls() {
   if (!state.isStyleExpanded) return;
 
@@ -98,11 +127,57 @@ function bindStyleToggle() {
   });
 }
 
-async function tryClipboardImport(source) {
-  if (!state.autoClipboard || isEditing) return;
-  const nextValue = await readClipboardTextSafely();
-  if (!nextValue || nextValue === state.value) return;
-  await applyValue(nextValue);
+async function tryClipboardImport(trigger) {
+  if (
+    !shouldAutoImportClipboard({
+      autoClipboard: state.autoClipboard,
+      isEditing,
+      trigger,
+    })
+  ) {
+    return;
+  }
+
+  const result = resolveClipboardResult(await readClipboardTextResult());
+  if (result.status !== 'success' || !result.text || result.text === state.value) return false;
+  await applyValue(result.text);
+  return true;
+}
+
+function resetPasteButtonLabel() {
+  if (pasteButtonResetTimer) {
+    window.clearTimeout(pasteButtonResetTimer);
+    pasteButtonResetTimer = null;
+  }
+
+  elements.pasteButton.textContent = 'Paste';
+}
+
+function showPasteButtonFallback(status) {
+  elements.input.focus();
+  elements.pasteButton.textContent = getPasteButtonLabel(status);
+
+  if (pasteButtonResetTimer) {
+    window.clearTimeout(pasteButtonResetTimer);
+  }
+
+  pasteButtonResetTimer = window.setTimeout(() => {
+    elements.pasteButton.textContent = 'Paste';
+    pasteButtonResetTimer = null;
+  }, 1800);
+}
+
+function resolveClipboardResult(result) {
+  return shouldTreatClipboardReadAsStale(clipboardSession, result)
+    ? { status: 'stale', text: null }
+    : result;
+}
+
+function stopForegroundClipboardImport() {
+  if (!cancelForegroundClipboardImport) return;
+
+  cancelForegroundClipboardImport();
+  cancelForegroundClipboardImport = null;
 }
 
 elements.input.value = state.value;
@@ -134,22 +209,60 @@ elements.clearButton.addEventListener('click', async () => {
   await syncQr();
 });
 
-elements.pasteButton.addEventListener('click', async () => {
-  const nextValue = await readClipboardTextSafely();
-  if (nextValue) {
-    await applyValue(nextValue);
+elements.fillDebugButton.addEventListener('click', async () => {
+  const debugInfo = writeDebugInfoToInput(elements.input, buildDebugInfoText());
+  await applyValue(debugInfo);
+});
+
+elements.copyDebugButton.addEventListener('click', async () => {
+  const text = getCopyPayload({
+    inputValue: elements.input.value,
+  });
+
+  const copied = await copyTextSafely(text);
+
+  if (copied) {
+    markAppClipboardWrite(clipboardSession, text);
   }
 });
 
+elements.pasteButton.addEventListener('click', async () => {
+  const result = resolveClipboardResult(await readClipboardTextResult());
+
+  if (result.status === 'success') {
+    resetPasteButtonLabel();
+    await applyValue(result.text);
+    return;
+  }
+
+  showPasteButtonFallback(result.status);
+});
+
 elements.favoriteButton.addEventListener('click', () => {
-  Object.assign(state, toggleFavorite(state, state.value));
+  Object.assign(state, addFavoriteItem(state, state.value));
   renderMemorySection();
   saveStoredState(state);
 });
 
 elements.memory.addEventListener('click', async (event) => {
+  const deleteHistoryButton = event.target.closest('[data-delete-history]');
+  const deleteFavoriteButton = event.target.closest('[data-delete-favorite]');
   const historyButton = event.target.closest('[data-history]');
   const favoriteButton = event.target.closest('[data-favorite]');
+
+  if (deleteHistoryButton) {
+    Object.assign(state, removeHistoryItem(state, deleteHistoryButton.dataset.deleteHistory));
+    renderMemorySection();
+    saveStoredState(state);
+    return;
+  }
+
+  if (deleteFavoriteButton) {
+    Object.assign(state, removeFavoriteItem(state, deleteFavoriteButton.dataset.deleteFavorite));
+    renderMemorySection();
+    saveStoredState(state);
+    return;
+  }
 
   if (historyButton) {
     await applyValue(historyButton.dataset.history);
@@ -165,8 +278,17 @@ elements.saveButton.addEventListener('click', () => {
 });
 
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible') {
-    await tryClipboardImport('Updated from clipboard');
+  if (document.visibilityState === 'hidden') {
+    stopForegroundClipboardImport();
+    notePossibleExternalClipboardChange(clipboardSession);
+    return;
+  }
+
+  if (document.visibilityState === 'visible' && state.autoClipboard) {
+    stopForegroundClipboardImport();
+    cancelForegroundClipboardImport = scheduleForegroundClipboardImport({
+      tryImport: () => tryClipboardImport('foreground'),
+    });
   }
 });
 
@@ -175,7 +297,19 @@ if (sharedValue) {
   await applyValue(sharedValue);
   clearSharedParams();
 } else {
-  await tryClipboardImport('Loaded from clipboard');
+  const imported = await tryClipboardImport('load');
+
+  if (!imported) {
+    const startupValue = resolveStartupValue({
+      sharedValue: '',
+      clipboardValue: '',
+      history: state.history,
+    });
+
+    if (startupValue) {
+      await applyValue(startupValue);
+    }
+  }
 }
 
 if ('serviceWorker' in navigator) {

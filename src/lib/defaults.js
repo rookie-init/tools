@@ -1,7 +1,7 @@
 export const DEFAULT_STATE = {
   value: '',
   size: 320,
-  margin: 16,
+  margin: 0,
   foreground: '#000000',
   background: '#ffffff',
   errorCorrectionLevel: 'M',

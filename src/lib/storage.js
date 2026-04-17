@@ -14,15 +14,27 @@ export function pushHistoryItem(state, value) {
   return { ...state, history };
 }
 
-export function toggleFavorite(state, value) {
+export function addFavoriteItem(state, value) {
   const trimmed = value.trim();
   if (!trimmed) return state;
+  if (state.favorites.includes(trimmed)) return state;
 
-  const favorites = state.favorites.includes(trimmed)
-    ? state.favorites.filter((item) => item !== trimmed)
-    : [trimmed, ...state.favorites];
-
+  const favorites = [trimmed, ...state.favorites];
   return { ...state, favorites };
+}
+
+export function removeHistoryItem(state, value) {
+  return {
+    ...state,
+    history: state.history.filter((item) => item !== value),
+  };
+}
+
+export function removeFavoriteItem(state, value) {
+  return {
+    ...state,
+    favorites: state.favorites.filter((item) => item !== value),
+  };
 }
 
 export function loadStoredState() {

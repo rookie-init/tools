@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  addFavoriteItem,
   createEmptyState,
+  removeFavoriteItem,
+  removeHistoryItem,
   pushHistoryItem,
-  toggleFavorite,
 } from '../src/lib/storage.js';
 
 describe('storage helpers', () => {
@@ -20,11 +22,35 @@ describe('storage helpers', () => {
     expect(state.history[0]).toBe('item-10');
   });
 
-  it('toggles favorites in place by exact value', () => {
+  it('adds favorites once and keeps duplicates out', () => {
     let state = createEmptyState();
-    state = toggleFavorite(state, 'alpha');
+    state = addFavoriteItem(state, 'alpha');
     expect(state.favorites).toEqual(['alpha']);
-    state = toggleFavorite(state, 'alpha');
-    expect(state.favorites).toEqual([]);
+    state = addFavoriteItem(state, 'alpha');
+    expect(state.favorites).toEqual(['alpha']);
+  });
+
+  it('removes history items by exact value', () => {
+    const state = removeHistoryItem(
+      {
+        ...createEmptyState(),
+        history: ['alpha', 'beta'],
+      },
+      'alpha',
+    );
+
+    expect(state.history).toEqual(['beta']);
+  });
+
+  it('removes favorite items by exact value', () => {
+    const state = removeFavoriteItem(
+      {
+        ...createEmptyState(),
+        favorites: ['alpha', 'beta'],
+      },
+      'beta',
+    );
+
+    expect(state.favorites).toEqual(['alpha']);
   });
 });

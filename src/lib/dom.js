@@ -6,9 +6,9 @@ export function createShellMarkup() {
           <canvas id="qr-canvas" width="320" height="320"></canvas>
         </div>
         <p id="scanability-warning" class="micro-copy warning" hidden></p>
-        <div class="action-row action-row-stacked preview-actions">
-          <button id="save-button" class="button button-primary button-wide" type="button">Save PNG</button>
-          <button id="favorite-button" class="button button-tertiary button-wide" type="button">Toggle Favorite</button>
+        <div class="action-row preview-actions">
+          <button id="save-button" class="button button-primary" type="button">Save</button>
+          <button id="favorite-button" class="button button-tertiary" type="button">Favorite</button>
         </div>
       </section>
       <section class="controls-panel" data-section="input" data-layout="controls">
@@ -16,8 +16,10 @@ export function createShellMarkup() {
           <textarea id="qr-input" rows="5" placeholder="Paste text, URL, or any string"></textarea>
         </label>
         <div class="action-row controls-actions">
-          <button id="paste-button" class="button button-primary" type="button">Paste and Generate</button>
+          <button id="paste-button" class="button button-primary" type="button">Paste</button>
           <button id="clear-button" class="button button-secondary" type="button">Clear</button>
+          <button id="fill-debug-button" class="button button-tertiary" type="button">Debug</button>
+          <button id="copy-debug-button" class="button button-secondary" type="button">Copy</button>
         </div>
         <section class="settings-panel" data-section="controls"></section>
         <section class="memory-panel" data-section="memory"></section>
@@ -33,6 +35,8 @@ export function getAppElements() {
     warning: document.querySelector('#scanability-warning'),
     pasteButton: document.querySelector('#paste-button'),
     clearButton: document.querySelector('#clear-button'),
+    fillDebugButton: document.querySelector('#fill-debug-button'),
+    copyDebugButton: document.querySelector('#copy-debug-button'),
     saveButton: document.querySelector('#save-button'),
     favoriteButton: document.querySelector('#favorite-button'),
     settings: document.querySelector('.settings-panel'),
@@ -91,17 +95,26 @@ export function renderSettings(state) {
 }
 
 export function renderMemory(state) {
-  const historyItems = state.history
-    .map((item) => `<button class="memory-chip" data-history="${item}">${item}</button>`)
-    .join('');
-  const favoriteItems = state.favorites
-    .map((item) => `<button class="memory-chip favorite-chip" data-favorite="${item}">${item}</button>`)
-    .join('');
+  const renderMemoryChip = (item, kind) => `
+    <div class="memory-chip-row ${kind === 'favorite' ? 'favorite-chip' : ''}">
+      <button class="memory-chip" type="button" data-${kind}="${item}">${item}</button>
+      <button
+        class="memory-chip-delete"
+        type="button"
+        aria-label="Delete ${kind} item"
+        data-delete-${kind}="${item}"
+      >
+        ×
+      </button>
+    </div>
+  `;
+
+  const historyItems = state.history.map((item) => renderMemoryChip(item, 'history')).join('');
+  const favoriteItems = state.favorites.map((item) => renderMemoryChip(item, 'favorite')).join('');
 
   return `
     <div class="panel-header">
       <p class="eyebrow eyebrow-light">Memory</p>
-      <h2>Keep the strings you use most.</h2>
     </div>
     <div class="memory-group">
       <p class="label-light">Favorites</p>
